@@ -125,7 +125,6 @@ public class SeatService {
 	}
 
 
-	// copy before storing to keep internal map separate
 	private Seat deepCopySeat(Seat s) {
 		return copySeat(s);
 	}

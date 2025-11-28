@@ -58,8 +58,7 @@ export default function SeatMap({
 
     try {
       const ctl = createSeatSSE(flightId, {
-        oninit: (payload: any) =>
-          Array.isArray(payload) && setSeats(payload),
+        oninit: (payload: any) => Array.isArray(payload) && setSeats(payload),
         onupdate: (payload: any) => {
           if (Array.isArray(payload)) {
             setSeats(payload);
@@ -133,8 +132,8 @@ export default function SeatMap({
     if (!rowMap.has(s.row)) rowMap.set(s.row, []);
     rowMap.get(s.row)!.push(s);
   });
-  const rows = Array.from(rowMap.entries()).sort((a, b) =>
-    a[0].localeCompare(b[0])
+  const rows = Array.from(rowMap.entries()).sort(
+    (a, b) => Number(a[0]) - Number(b[0])
   );
 
   return (
@@ -144,20 +143,13 @@ export default function SeatMap({
       </h3>
 
       {loading && (
-        <div className="text-sm text-gray-600 mb-2 animate-pulse">
-          Working…
-        </div>
+        <div className="text-sm text-gray-600 mb-2 animate-pulse">Working…</div>
       )}
 
       <div className="space-y-3">
         {rows.map(([row, rowSeats]) => (
-          <div
-            key={row}
-            className="flex items-center gap-3 transition-all"
-          >
-            <div className="w-10 text-sm font-medium text-gray-700">
-              {row}
-            </div>
+          <div key={row} className="flex items-center gap-3 transition-all">
+            <div className="w-10 text-sm font-medium text-gray-700">{row}</div>
 
             <div className="flex flex-wrap gap-2">
               {rowSeats
@@ -173,19 +165,15 @@ export default function SeatMap({
 
                   const highlightPref =
                     prefs &&
-                    ((prefs.preferredSeatType === "WINDOW" &&
-                      seat.window) ||
-                      (prefs.preferredSeatType === "AISLE" &&
-                        seat.aisle) ||
+                    ((prefs.preferredSeatType === "WINDOW" && seat.window) ||
+                      (prefs.preferredSeatType === "AISLE" && seat.aisle) ||
                       prefs.preferredSeatId === seat.id);
 
                   return (
                     <button
                       key={seat.id}
                       title={`${seat.row}${seat.col}`}
-                      disabled={
-                        seat.reserved && seat.reservedBy !== userId
-                      }
+                      disabled={seat.reserved && seat.reservedBy !== userId}
                       onClick={() => onClickSeat(seat)}
                       className={`w-12 h-12 rounded-lg border text-sm font-medium flex items-center justify-center transition 
                         ${cls}
@@ -194,11 +182,7 @@ export default function SeatMap({
                             ? "ring-2 ring-indigo-500 scale-105 shadow-lg"
                             : ""
                         }
-                        ${
-                          highlightPref
-                            ? "ring-2 ring-blue-400"
-                            : ""
-                        }
+                        ${highlightPref ? "ring-2 ring-blue-400" : ""}
                         ${
                           !(seat.reserved && seat.reservedBy !== userId)
                             ? "hover:scale-105 hover:shadow-md"
@@ -213,9 +197,7 @@ export default function SeatMap({
                 })}
             </div>
 
-            <div className="w-10 text-sm font-medium text-gray-700">
-              {row}
-            </div>
+            <div className="w-10 text-sm font-medium text-gray-700">{row}</div>
           </div>
         ))}
       </div>
