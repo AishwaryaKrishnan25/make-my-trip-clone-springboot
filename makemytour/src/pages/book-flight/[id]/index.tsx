@@ -53,6 +53,9 @@ const BookFlightPage = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState<number>(1);
   const [open, setOpen] = useState(false);
+  const [seatPrice, setSeatPrice] = useState(0);
+  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+
 
   // Fix #2 & #3: dynamic price
   const [dynamicPrice, setDynamicPrice] = useState<number | null>(null);
@@ -192,14 +195,24 @@ const BookFlightPage = () => {
       setOpen(true);
       return;
     }
+	
+	// SEAT REQUIRED VALIDATION
+	if (!selectedSeat) {
+	  alert("Please select a seat before booking.");
+	  return;
+	}
+
 
     try {
-      const booking = await bookFlight({
-        userId: user.id || user._id,
-        flightId: flight.id,
-        seats: quantity,
-        price: totalPrice, // dynamic price used
-      });
+		const booking = await bookFlight({
+		  userId: user.id || user._id,
+		  flightId: flight.id,
+		  seats: quantity,
+		  price: totalPrice + seatPrice,
+		  seatId: selectedSeat ?? null,
+		  seatPrice: seatPrice ?? 0,
+		});
+
 
       dispatch(
         setUser({
@@ -272,10 +285,23 @@ const BookFlightPage = () => {
             <CreditCard className="w-5 h-5 mr-2" /> Fare Summary
           </h3>
 
-          <div className="flex justify-between">
-            <span>Total Price</span>
-            <span className="font-bold">₹ {totalPrice.toLocaleString()}</span>
-          </div>
+		  <div className="flex justify-between">
+		    <span>Flight Fare</span>
+		    <span className="font-bold">₹ {totalPrice.toLocaleString()}</span>
+		  </div>
+
+		  {seatPrice > 0 && (
+		    <div className="flex justify-between text-blue-700 mt-2">
+		      <span>Seat Upgrade Fee</span>
+		      <span className="font-bold">₹ {seatPrice.toLocaleString()}</span>
+		    </div>
+		  )}
+
+		  <div className="flex justify-between mt-3 text-lg">
+		    <span>Total Payable</span>
+		    <span className="font-bold">₹ {(totalPrice + seatPrice).toLocaleString()}</span>
+		  </div>
+
 
           <p className="text-xs text-green-600 mt-1">
             Dynamic price applied: ₹{currentFare}
@@ -336,7 +362,12 @@ const BookFlightPage = () => {
 
             <LiveFlightStatus flightId={flight.id} />
 
-            <SeatMap flightId={flight.id} userId={currentUserId || "guest"} />
+			<SeatMap
+			   flightId={flight.id}
+			   userId={currentUserId}
+			   onSeatSelected={(seatId) => setSelectedSeat(seatId)}
+			   onSeatPriceChange={(price) => setSeatPrice(price)}
+			/>
           </div>
 
           {/* Recommendations */}
@@ -352,10 +383,23 @@ const BookFlightPage = () => {
             <CreditCard className="w-5 h-5 mr-2" /> Fare Summary
           </h2>
 
-          <div className="flex justify-between mb-2">
-            <span>Base Fare</span>
-            <strong>₹ {totalPrice.toLocaleString()}</strong>
-          </div>
+		  <div className="flex justify-between mb-2">
+		    <span>Flight Fare</span>
+		    <strong>₹ {totalPrice.toLocaleString()}</strong>
+		  </div>
+
+		  {seatPrice > 0 && (
+		    <div className="flex justify-between mb-2 text-blue-700">
+		      <span>Seat Upgrade Fee</span>
+		      <strong>₹ {seatPrice.toLocaleString()}</strong>
+		    </div>
+		  )}
+
+		  <div className="flex justify-between mt-3 text-lg">
+		    <span>Total Payable</span>
+		    <strong>₹ {(totalPrice + seatPrice).toLocaleString()}</strong>
+		  </div>
+
 
           <p className="text-xs text-green-600">
             Dynamic price applied: ₹{currentFare}
@@ -363,9 +407,13 @@ const BookFlightPage = () => {
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full bg-red-600 text-white">
-                Book Now
-              </Button>
+			<Button
+			  className="w-full bg-red-600 text-white"
+			  disabled={!selectedSeat}   // disable if no seat selected
+			>
+			  {selectedSeat ? "Book Now" : "Select a Seat First"}
+			</Button>
+
             </DialogTrigger>
 
             {user ? (

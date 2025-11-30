@@ -25,10 +25,24 @@ public class BookingController {
     }
 
     @PostMapping("/flight")
-    public ResponseEntity<Booking> bookFlight(@RequestParam String userId,@RequestParam String flightId,@RequestParam int seats,@RequestParam double price){
-        Booking b = bookingService.bookFlight(userId, flightId, seats, price);
-        return ResponseEntity.ok(b);
+    public ResponseEntity<?> bookFlight(
+            @RequestParam String userId,
+            @RequestParam String flightId,
+            @RequestParam int seats,
+            @RequestParam double price,
+            @RequestParam(required = false) String seatId,
+            @RequestParam(required = false) Double seatPrice
+    ) {
+        try {
+            Booking booking = bookingService.bookFlight(
+                    userId, flightId, seats, price, seatId, seatPrice
+            );
+            return ResponseEntity.ok(booking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
+
 
     @PostMapping("/hotel")
     public ResponseEntity<Booking> bookHotel(@RequestParam String userId,@RequestParam String hotelId,@RequestParam int rooms,@RequestParam double price){

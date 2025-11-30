@@ -1,4 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# MakeMyTrip Clone – Travel Booking System
+
+A full-stack MakeMyTrip-inspired travel booking platform with bookings, cancellations, reviews, seat selection, dynamic pricing, and AI-based recommendations.
+
+## Overview
+
+This project is a complete travel booking system built using React, Spring Boot, and MongoDB, designed to simulate core MakeMyTrip functionality.
+
+It includes:
+
+- Real-time seat updates
+- Cancellation & refund workflows
+- Dynamic pricing & surge logic
+- Reviews & ratings
+- AI-driven recommendations
+
+---
+## Features
+### 1. Cancellation & Refund System
+
+- Cancel bookings via dashboard
+- Auto-refund based on policy (time-based %)
+- Partial refund logic
+- Refund status tracker
+- Cancellation reason dropdown
+
+### 2. Review & Rating Module
+
+- 1–5 star ratings
+- Write reviews + upload photos
+- Reply to reviews
+- Flag inappropriate reviews
+- Sort by helpfulness or recent
+
+### 3. Live Flight Status (Mock API)
+
+- Real-time flight status updates
+- Mock delay data (e.g., “Delayed by 1 hr”)
+- Updated ETA and delay reason
+- SSE (Server-Sent Events) based streaming
+
+### 4. Seat & Room Selection
+
+- Interactive seat map
+
+- Color-coded seats:
+
+   🟢 Available
+   🟡 Premium
+   🔴 Reserved
+
+- Premium seat upsell popup
+- Saves user preferences
+- Real-time updates using SSE
+
+### 5. Dynamic Pricing Engine
+
+- Auto-adjusting prices based on demand
+- Holiday surge pricing
+- Price history & graphs
+- “Price Freeze” feature
+
+### 6. AI Recommendations
+
+- Smart recommendations based on user history
+- Collaborative filtering (mock logic)
+- “Why this recommendation?” explanation
+- Feedback loop
+----
+
+## Tech Stack
+### Frontend
+
+- React
+- TypeScript
+- TailwindCSS
+- React
+
+
+### Backend
+
+- Spring Boot (Java)
+- REST API
+- Server-Sent Events (SSE)
+- MongoDB
+
 
 ## Getting Started
 

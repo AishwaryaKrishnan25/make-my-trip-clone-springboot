@@ -28,12 +28,70 @@ export default function LiveFlightStatus({
   enablePolling = false,
   pollIntervalMs = 60000,
 }: Props) {
-  const [status, setStatus] = useState<FlightStatus | null>(null);
-  const [connected, setConnected] = useState(false);
-  const latestStatusRef = useRef<FlightStatus | null>(null);
-  const esControllerRef = useRef<{ start: () => void; close: () => void; isRunning?: boolean } | null>(null);
-  const fallbackEsRef = useRef<EventSource | null>(null);
-  const pollTimerRef = useRef<number | null>(null);
+	
+	const RANDOM_REASONS = [
+	  "Weather issue",
+	  "Technical inspection",
+	  "Air traffic congestion",
+	  "Crew shortage",
+	  "Runway maintenance",
+	  "Security check delays",
+	  "Passenger connection delay",
+	  "Fueling operations",
+	  "Baggage loading issue",
+	  "ATC slot restriction"
+	];
+
+	function generateRandomStatus() {
+	  const statuses = ["ON_TIME", "DELAYED", "CANCELLED", "ARRIVED"];
+	  const pick = statuses[Math.floor(Math.random() * statuses.length)];
+	  return pick;
+	}
+	
+	function generateRandomEstimatedArrival(randomStatus: string, delayMinutes: number) {
+	  const now = new Date();
+
+	  if (randomStatus === "CANCELLED") {
+	    return null;
+	  }
+
+	  if (randomStatus === "ARRIVED") {
+	    return new Date().toISOString();
+	  }
+
+	  if (randomStatus === "DELAYED") {
+	    const delayed = new Date(now.getTime() + (delayMinutes + Math.floor(Math.random() * 20)) * 60000);
+	    return delayed.toISOString();
+	  }
+
+	  // ON_TIME
+	  const earlyArrival = new Date(now.getTime() + (30 + Math.floor(Math.random() * 90)) * 60000);
+	  return earlyArrival.toISOString();
+	}
+
+
+	const [actionMessage, setActionMessage] = useState<string>("");
+	const [status, setStatus] = useState<FlightStatus | null>(null);
+	const [connected, setConnected] = useState(false);
+	const latestStatusRef = useRef<FlightStatus | null>(null);
+	const esControllerRef = useRef<{ start: () => void; close: () => void; isRunning?: boolean } | null>(null);
+	const fallbackEsRef = useRef<EventSource | null>(null);
+	const pollTimerRef = useRef<number | null>(null);
+
+
+  const handleUnsubscribe = () => {
+    if (esControllerRef.current) {
+      esControllerRef.current.close();
+      esControllerRef.current = null;
+    }
+    setConnected(false);
+  };
+
+  function showAction(msg: string) {
+    setActionMessage(msg);
+    setTimeout(() => setActionMessage(""), 2000); // disappears after 2s
+  }
+
 
   useEffect(() => {
     if (enableNotifications && typeof Notification !== "undefined" && Notification.permission === "default") {
@@ -123,8 +181,10 @@ export default function LiveFlightStatus({
       const esCtl = createEventSourceWithReconnect(flightId, {
         onopen: () => setConnected(true),
         oninit: (data: FlightStatus) => setStatus(data),
-        onupdate: (data: FlightStatus) => { handleIncomingUpdateWithNotifications(data); setStatus(data); },
-        onbroadcast: (data: FlightStatus) => { handleIncomingUpdateWithNotifications(data); setStatus(data); },
+		onupdate: (data: FlightStatus) => { 
+		    handleIncomingUpdateWithNotifications(data); 
+		    setStatus(data); 
+		},
         onmessage: (data: FlightStatus) => setStatus(data),
         onerror: (err: any) => { console.warn("SSE error (reconnect helper):", err); setConnected(false); },
       });
@@ -257,66 +317,88 @@ export default function LiveFlightStatus({
       </div>
 
       <div className="flex gap-2">
-        <button
-          onClick={async () => {
-            try {
-              const fresh = await getFlightStatus(status.flightId);
-              setStatus(fresh);
-            } catch (e) {
-              console.error(e);
-            }
-          }}
-          className="px-3 py-1 border rounded"
-        >
-          Refresh
-        </button>
+	  <button
+	    onClick={async () => {
+	      try {
+	        const fresh = await getFlightStatus(status.flightId);
+	        setStatus(fresh);
+	        showAction("✔ Refreshed");
+	      } catch (e) {
+	        console.error(e);
+	        showAction("❌ Refresh failed");
+	      }
+	    }}
+	    className="px-3 py-1 border rounded"
+	  >
+	    Refresh
+	  </button>
 
-        <button
-          onClick={() => {
-            // toggle SSE connection using controller if present, else toggle fallback
-            if (esControllerRef.current) {
-              try {
-                if (esControllerRef.current.isRunning) {
-                  esControllerRef.current.close();
-                  esControllerRef.current = null;
-                  setConnected(false);
-                } else {
-                  esControllerRef.current.start();
-                  setConnected(true);
-                }
-              } catch (e) {
-                console.error("controller toggle failed", e);
-              }
-            } else if (fallbackEsRef.current) {
-              try {
-                fallbackEsRef.current.close();
-                fallbackEsRef.current = null;
-                setConnected(false);
-              } catch (e) {
-                console.error("fallback close failed", e);
-              }
-            } else {
-              // nothing present: reload to reconnect
-              window.location.reload();
-            }
-          }}
-          className="px-3 py-1 border rounded"
-        >
-          {connected ? "Unsubscribe" : "Reconnect"}
-        </button>
 
-        <button
-          onClick={async () => {
-            try {
-              await setDelayMock(status.flightId, 30, "Manual test delay");
-            } catch (e) {
-              console.error("setDelayMock failed", e);
-            }
-          }}
-          className="px-3 py-1 border rounded"
-        >
-          Trigger mock delay
-        </button>
+	  <button
+	    onClick={() => {
+	      const ctl = esControllerRef.current;
+	      const fb = fallbackEsRef.current;
+
+	      // If reconnect-controller exists → unsubscribe
+	      if (ctl) {
+	        try {
+	          ctl.close();
+	        } catch {}
+	        esControllerRef.current = null;
+	        setConnected(false);
+	        return;
+	      }
+
+	      // If fallback EventSource exists → unsubscribe
+	      if (fb) {
+	        try {
+	          fb.close();
+	        } catch {}
+	        fallbackEsRef.current = null;
+	        setConnected(false);
+	        return;
+	      }
+
+	      // No SSE exists → reconnect by reloading (simple + safe)
+	      window.location.reload();
+	    }}
+	    className="px-3 py-1 border rounded"
+	  >
+	    {connected ? "Unsubscribe" : "Reconnect"}
+	  </button>
+
+
+	  <button
+	    onClick={async () => {
+	      try {
+	        const randomMinutes = Math.floor(Math.random() * 60) + 1;
+	        const randomReason = RANDOM_REASONS[Math.floor(Math.random() * RANDOM_REASONS.length)];
+	        const randomStatus = generateRandomStatus();
+	        const randomEta = generateRandomEstimatedArrival(randomStatus, randomMinutes);
+
+	        await setDelayMock(
+	          status.flightId,
+	          randomMinutes,
+	          `${randomStatus}: ${randomReason}`
+	        );
+
+	        setStatus((prev) =>
+	          prev ? { ...prev, estimatedArrival: randomEta } : prev
+	        );
+
+	        showAction("⏱ Mock Delay Triggered");
+
+	      } catch (e) {
+	        console.error("setDelayMock failed", e);
+	        showAction("❌ Mock Delay Failed");
+	      }
+	    }}
+	    className="px-3 py-1 border rounded"
+	  >
+	    Trigger mock delay
+	  </button>
+
+
       </div>
     </div>
   );

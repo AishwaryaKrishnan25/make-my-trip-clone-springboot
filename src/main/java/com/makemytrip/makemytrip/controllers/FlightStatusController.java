@@ -1,9 +1,10 @@
 package com.makemytrip.makemytrip.controllers;
 
-import com.makemytrip.makemytrip.models.FlightStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.makemytrip.makemytrip.models.FlightStatus;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -61,7 +62,7 @@ public class FlightStatusController {
     }
 
     @GetMapping(value = "/stream/{flightId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(@PathVariable String flightId) {
+    public SseEmitter subscribe(@PathVariable String flightId) {
 
         FlightStatus status = createIfMissing(flightId);
 
@@ -120,4 +121,5 @@ public class FlightStatusController {
             broadcast(s.getFlightId(), "update", s);
         });
     }
+
 }

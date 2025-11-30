@@ -21,10 +21,7 @@ public class PricingController {
     @Autowired
     private PriceHistoryRepository priceHistoryRepository;
 
-    /**
-     * Get current price + base price + freezeUntil for a flight.
-     * Open endpoint (used by UI / booking page).
-     */
+   
     @GetMapping("/flight/{flightId}/price")
     public ResponseEntity<?> getFlightCurrentPrice(@PathVariable String flightId) {
         Optional<Flight> opt = flightRepository.findById(flightId);
@@ -49,9 +46,7 @@ public class PricingController {
         return ResponseEntity.ok(resp);
     }
 
-    /**
-     * Get price history for a flight (for graphs).
-     */
+   
     @GetMapping("/flight/{flightId}/history")
     public ResponseEntity<?> getFlightPriceHistory(@PathVariable String flightId) {
         List<PriceHistory> history =
@@ -59,10 +54,7 @@ public class PricingController {
         return ResponseEntity.ok(history);
     }
 
-    /**
-     * Set/update base price for a flight.
-     * Logs a history entry to indicate manual change.
-     */
+   
     @PostMapping("/flight/{flightId}/setBasePrice")
     public ResponseEntity<?> setBasePrice(
             @PathVariable String flightId,
@@ -91,7 +83,6 @@ public class PricingController {
 
             flightRepository.save(f);
 
-            // Log base price change as history
             PriceHistory ph = new PriceHistory(
                     "flight",
                     f.getId(),
@@ -108,12 +99,7 @@ public class PricingController {
         }
     }
 
-    /**
-     * Freeze current price for given minutes.
-     * NOTE: We DO NOT log a PriceHistory entry here.
-     * The actual graph should only show real price changes,
-     * not "freeze actions" where price stays the same.
-     */
+    
     @PostMapping("/flight/{flightId}/freeze")
     public ResponseEntity<?> freezeFlightPrice(
             @PathVariable String flightId,

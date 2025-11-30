@@ -16,63 +16,57 @@ import java.time.LocalDateTime;
 @Service
 public class BookingService {
 
-    @Autowired
-    private UserRepository userRepo;
+	@Autowired
+	private UserRepository userRepo;
 
-    @Autowired
-    private FlightRepository flightRepo;
+	@Autowired
+	private FlightRepository flightRepo;
 
-    @Autowired
-    private HotelRepository hotelRepo;
+	@Autowired
+	private HotelRepository hotelRepo;
 
-    @Autowired
-    private BookingRepository bookingRepo;
+	@Autowired
+	private BookingRepository bookingRepo;
 
-    public Booking bookFlight(String userId, String flightId, int seats, double price) {
-        Users user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        Flight flight = flightRepo.findById(flightId).orElseThrow(() -> new RuntimeException("Flight not found"));
+	public Booking bookFlight(String userId, String flightId, int seats, double price,
+			String seatId, Double seatPrice) {
 
-        if (flight.getAvailableSeats() < seats) throw new RuntimeException("Not enough seats");
-        flight.setAvailableSeats(flight.getAvailableSeats() - seats);
-        flightRepo.save(flight);
+		Booking booking = new Booking();
+		booking.setUserId(userId);
+		booking.setSeats(seats);
+		booking.setBookingType("FLIGHT");
+		booking.setBookingRef(flightId);
+		booking.setSeats(seats);
+		booking.setTotalAmount(price);
+		booking.setStatus("CONFIRMED");
+		booking.setBookingTime(LocalDateTime.now());
 
-        Booking booking = new Booking();
-        booking.setUserId(userId);
-        booking.setBookingType("FLIGHT");
-        booking.setBookingRef(flightId);
-        booking.setTotalAmount(price);
-        booking.setBookingTime(LocalDateTime.now());
-        booking.setStatus("CONFIRMED");
+		booking.setSeatId(seatId);
+		booking.setSeatPrice(seatPrice != null ? seatPrice : 0.0);
 
-        bookingRepo.save(booking);
+		return bookingRepo.save(booking);
+	}
 
-        // save booking id to user
-        user.getBookingIds().add(booking.getId());
-        userRepo.save(user);
+	public Booking bookHotel(String userId, String hotelId, int rooms, double price) {
+		Users user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+		Hotel hotel = hotelRepo.findById(hotelId).orElseThrow(() -> new RuntimeException("Hotel not found"));
 
-        return booking;
-    }
+		if (hotel.getAvailableRooms() < rooms) throw new RuntimeException("Not enough rooms");
+		hotel.setAvailableRooms(hotel.getAvailableRooms() - rooms);
+		hotelRepo.save(hotel);
 
-    public Booking bookHotel(String userId, String hotelId, int rooms, double price) {
-        Users user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        Hotel hotel = hotelRepo.findById(hotelId).orElseThrow(() -> new RuntimeException("Hotel not found"));
+		Booking booking = new Booking();
+		booking.setUserId(userId);
+		booking.setBookingType("HOTEL");
+		booking.setBookingRef(hotelId);
+		booking.setTotalAmount(price);
+		booking.setBookingTime(LocalDateTime.now());
+		booking.setStatus("CONFIRMED");
 
-        if (hotel.getAvailableRooms() < rooms) throw new RuntimeException("Not enough rooms");
-        hotel.setAvailableRooms(hotel.getAvailableRooms() - rooms);
-        hotelRepo.save(hotel);
+		bookingRepo.save(booking);
+		user.getBookingIds().add(booking.getId());
+		userRepo.save(user);
 
-        Booking booking = new Booking();
-        booking.setUserId(userId);
-        booking.setBookingType("HOTEL");
-        booking.setBookingRef(hotelId);
-        booking.setTotalAmount(price);
-        booking.setBookingTime(LocalDateTime.now());
-        booking.setStatus("CONFIRMED");
-
-        bookingRepo.save(booking);
-        user.getBookingIds().add(booking.getId());
-        userRepo.save(user);
-
-        return booking;
-    }
+		return booking;
+	}
 }

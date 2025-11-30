@@ -1,26 +1,34 @@
-# Use an official Maven image with Java 17 for building
+# ==========================
+# BUILD STAGE
+# ==========================
 FROM maven:3.9.5-eclipse-temurin-17 AS build
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the project files
+# Copy pom.xml and download dependencies (layer caching)
+COPY pom.xml .
+
+RUN mvn dependency:go-offline -B
+
+# Copy entire project
 COPY . .
 
-# Build the project without running tests
+# Build Spring Boot project
 RUN mvn clean package -DskipTests
 
-# Use a lightweight JDK 17 image for running the application
+
+# ==========================
+# RUNTIME STAGE
+# ==========================
 FROM eclipse-temurin:17-jre
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy only the built JAR file from the previous stage
+# Copy built JAR
 COPY --from=build /app/target/makemytrip-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose the application port
+# Expose Spring Boot default port
 EXPOSE 8080
 
-# Run the application
+# Run application
 ENTRYPOINT ["java", "-jar", "app.jar"]

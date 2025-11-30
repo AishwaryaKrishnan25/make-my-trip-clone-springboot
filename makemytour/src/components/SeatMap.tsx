@@ -28,10 +28,15 @@ type Seat = {
 export default function SeatMap({
   flightId,
   userId,
+  onSeatSelected,
+  onSeatPriceChange,
 }: {
   flightId: string;
   userId: string;
+  onSeatSelected?: (seatId: string | null) => void;
+  onSeatPriceChange?: (price: number) => void;
 }) {
+
   const [seats, setSeats] = useState<Seat[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -85,25 +90,29 @@ export default function SeatMap({
   }, [flightId, userId]);
 
   async function onClickSeat(seat: Seat) {
+    // release seat if already selected by THIS user
     if (seat.reserved && seat.reservedBy === userId) {
-      try {
-        setLoading(true);
-        await releaseSeat(seat.id, userId);
-        setSelected(null);
-      } catch (err: any) {
-        alert("Failed to release seat: " + err.message);
-      } finally {
-        setLoading(false);
-      }
+      await releaseSeat(seat.id, userId);
+      setSelected(null);
+
+      if (onSeatSelected) onSeatSelected(null);
+      if (onSeatPriceChange) onSeatPriceChange(0);
+
       return;
     }
 
+    // Premium seat → show upsell popup
     if (seat.premium) {
       setUpsellSeat(seat);
       return;
     }
 
+    // Normal seat reservation
     await reserveAndSave(seat);
+
+    setSelected(seat.id);
+    if (onSeatSelected) onSeatSelected(seat.id);
+    if (onSeatPriceChange) onSeatPriceChange(seat.premiumPrice || 0);
   }
 
   async function reserveAndSave(seat: Seat) {
@@ -223,10 +232,15 @@ export default function SeatMap({
         <SeatUpsellPopup
           seat={upsellSeat}
           onCancel={() => setUpsellSeat(null)}
-          onConfirm={async () => {
-            await reserveAndSave(upsellSeat);
-            setUpsellSeat(null);
-          }}
+		  onConfirm={async () => {
+		    await reserveAndSave(upsellSeat);
+
+		    if (onSeatSelected) onSeatSelected(upsellSeat.id);
+		    if (onSeatPriceChange) onSeatPriceChange(upsellSeat.premiumPrice || 0);
+
+		    setUpsellSeat(null);
+		  }}
+
         />
       )}
     </div>

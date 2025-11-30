@@ -121,12 +121,13 @@ export async function bookHotel({ userId, hotelId, rooms, price }) {
   return res.data;
 }
 
-export async function bookFlight({ userId, flightId, seats, price }) {
+export async function bookFlight({ userId, flightId, seats, price, seatId, seatPrice }) {
   const res = await axios.post(`${BACKEND_URL}/api/bookings/flight`, null, {
-    params: { userId, flightId, seats, price },
+    params: { userId, flightId, seats, price, seatId, seatPrice },
   });
   return res.data;
 }
+
 
 /* ----------------- Refunds ----------------- */
 export const getRefundsForBooking = async (bookingId) => {
@@ -197,23 +198,61 @@ export async function setDelayMock(flightId, minutes = 30, reason = "Mock delay"
 
 export function createEventSourceWithReconnect(flightId, handlers = {}) {
   const url = `${BACKEND_URL}/api/flight-status/stream/${encodeURIComponent(flightId)}`;
+
   let es = null;
-  let retry = 1000;
+  let isRunning = false;
 
   const start = () => {
+    if (isRunning) return;
+    isRunning = true;
+
     es = new EventSource(url);
-    es.onopen = handlers.onopen || null;
-    es.onerror = handlers.onerror || null;
+
+    // Default unnamed event
     es.onmessage = (ev) => {
-      const data = JSON.parse(ev.data);
-      if (handlers.onmessage) handlers.onmessage(data);
+      if (handlers.onmessage) handlers.onmessage(JSON.parse(ev.data));
+    };
+
+    // Named "init"
+    es.addEventListener("init", (ev) => {
+      if (handlers.oninit) handlers.oninit(JSON.parse(ev.data));
+    });
+
+    // Named "update"
+    es.addEventListener("update", (ev) => {
+      if (handlers.onupdate) handlers.onupdate(JSON.parse(ev.data));
+    });
+
+    // 🔥 Named "broadcast" — THIS was missing
+    es.addEventListener("broadcast", (ev) => {
+      if (handlers.onbroadcast) handlers.onbroadcast(JSON.parse(ev.data));
+    });
+
+    es.onerror = (err) => {
+      console.warn("SSE error:", err);
+      if (handlers.onerror) handlers.onerror(err);
+
+      isRunning = false;
+      if (es) es.close();
+
+      // auto reconnect
+      setTimeout(() => start(), 2000);
+    };
+
+    es.onopen = () => {
+      if (handlers.onopen) handlers.onopen();
     };
   };
 
-  const close = () => es?.close();
+  const close = () => {
+    isRunning = false;
+    if (es) es.close();
+  };
 
-  return { start, close };
+  return { start, close, isRunning };
 }
+
+
 
 /* ----------------- Rooms ----------------- */
 export async function getRoomTypes(hotelId) {
@@ -253,15 +292,54 @@ export async function releaseSeat(seatId, userId) {
 
 export function createSeatSSE(flightId, handlers = {}) {
   const url = `${BACKEND_URL}/api/seats/stream/${encodeURIComponent(flightId)}`;
-  const es = new EventSource(url);
 
-  es.onmessage = (ev) => {
-    const data = JSON.parse(ev.data);
-    if (handlers.onmessage) handlers.onmessage(data);
+  let es = null;
+  let isRunning = false;
+
+  const start = () => {
+    if (isRunning) return;
+    isRunning = true;
+
+    es = new EventSource(url);
+
+    // Default unnamed messages
+    es.onmessage = (ev) => {
+      if (handlers.onmessage) handlers.onmessage(JSON.parse(ev.data));
+    };
+
+    // Named events (backend may send "update" or "seatUpdate")
+    es.addEventListener("update", (ev) => {
+      if (handlers.onupdate) handlers.onupdate(JSON.parse(ev.data));
+    });
+
+    es.addEventListener("seatUpdate", (ev) => {
+      if (handlers.onseatupdate) handlers.onseatupdate(JSON.parse(ev.data));
+    });
+
+    es.onerror = (err) => {
+      console.warn("Seat SSE error:", err);
+      if (handlers.onerror) handlers.onerror(err);
+
+      isRunning = false;
+      if (es) es.close();
+
+      // Auto-reconnect
+      setTimeout(() => start(), 2000);
+    };
+
+    es.onopen = () => {
+      if (handlers.onopen) handlers.onopen();
+    };
   };
 
-  return { close: () => es.close() };
+  const close = () => {
+    isRunning = false;
+    if (es) es.close();
+  };
+
+  return { start, close, isRunning };
 }
+
 
 /* ----------------- Preferences ----------------- */
 export async function getPreferences(userId) {
@@ -299,9 +377,12 @@ export async function getCurrentPrice(flightId) {
 }
 
 export async function setBasePrice(flightId, price) {
-  const res = await axios.post(`${BACKEND_URL}/pricing/flight/${encodeURIComponent(flightId)}/setBasePrice`, {
-    price,
-  });
+  const res = await axios.post(
+    `${BACKEND_URL}/pricing/flight/${flightId}/setBasePrice`,
+    {
+      basePrice: price,   // FIX THIS
+    }
+  );
   return res.data;
 }
 
