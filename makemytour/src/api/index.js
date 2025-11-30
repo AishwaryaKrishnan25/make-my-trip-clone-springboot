@@ -1,6 +1,7 @@
 // src/api/index.js
 import axios from "axios";
 
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 /* ----------------- Auth / User ----------------- */

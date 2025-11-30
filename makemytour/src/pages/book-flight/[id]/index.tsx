@@ -53,8 +53,8 @@ const BookFlightPage = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState<number>(1);
   const [open, setOpen] = useState(false);
-  const [seatPrice, setSeatPrice] = useState(0);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [seatPrice, setSeatPrice] = useState(0); // now total price
 
 
   // Fix #2 & #3: dynamic price
@@ -183,7 +183,7 @@ const BookFlightPage = () => {
   // FIX #2 + #3: Use dynamic price everywhere
   // -------------------------------------------------------------------
   const currentFare = dynamicPrice ?? flight.price;
-  const totalPrice = currentFare * quantity;
+  const totalPrice = currentFare * selectedSeats.length;
 
   // -------------------------------------------------------------------
   // BOOKING HANDLER
@@ -196,20 +196,20 @@ const BookFlightPage = () => {
       return;
     }
 	
-	// SEAT REQUIRED VALIDATION
-	if (!selectedSeat) {
-	  alert("Please select a seat before booking.");
+	if (selectedSeats.length === 0) {
+	  alert("Please select at least one seat.");
 	  return;
 	}
+
 
 
     try {
 		const booking = await bookFlight({
 		  userId: user.id || user._id,
 		  flightId: flight.id,
-		  seats: quantity,
+		  seats: selectedSeats.length,
 		  price: totalPrice + seatPrice,
-		  seatId: selectedSeat ?? null,
+		  seatId: selectedSeats.join(","),   // comma separated
 		  seatPrice: seatPrice ?? 0,
 		});
 
@@ -269,13 +269,7 @@ const BookFlightPage = () => {
 
           <div>
             <Label>Tickets</Label>
-            <Input
-              type="number"
-              min="1"
-              max={flight.availableSeats}
-              value={quantity}
-              onChange={handleQuantityChange}
-            />
+			<Input value={selectedSeats.length} readOnly />
           </div>
         </div>
 
@@ -365,9 +359,9 @@ const BookFlightPage = () => {
 			<SeatMap
 			   flightId={flight.id}
 			   userId={currentUserId}
-			   onSeatSelected={(seatId) => setSelectedSeat(seatId)}
-			   onSeatPriceChange={(price) => setSeatPrice(price)}
-			/>
+			   onSeatSelected={(seatIds) => setSelectedSeats(seatIds)}   // now array
+			      onSeatPriceChange={(totalSeatPrice) => setSeatPrice(totalSeatPrice)}
+			   />
           </div>
 
           {/* Recommendations */}
@@ -409,9 +403,9 @@ const BookFlightPage = () => {
             <DialogTrigger asChild>
 			<Button
 			  className="w-full bg-red-600 text-white"
-			  disabled={!selectedSeat}   // disable if no seat selected
+			  disabled={selectedSeats.length === 0}
 			>
-			  {selectedSeat ? "Book Now" : "Select a Seat First"}
+			{selectedSeats.length > 0 ? "Book Now" : "Select Seats First"}
 			</Button>
 
             </DialogTrigger>
