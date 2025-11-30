@@ -2,11 +2,9 @@ package com.makemytrip.makemytrip.services;
 
 import com.makemytrip.makemytrip.models.Users;
 import com.makemytrip.makemytrip.models.Booking;
-import com.makemytrip.makemytrip.models.Flight;
 import com.makemytrip.makemytrip.models.Hotel;
 import com.makemytrip.makemytrip.repositories.UserRepository;
 import com.makemytrip.makemytrip.repositories.BookingRepository;
-import com.makemytrip.makemytrip.repositories.FlightRepository;
 import com.makemytrip.makemytrip.repositories.HotelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,9 +16,6 @@ public class BookingService {
 
 	@Autowired
 	private UserRepository userRepo;
-
-	@Autowired
-	private FlightRepository flightRepo;
 
 	@Autowired
 	private HotelRepository hotelRepo;
