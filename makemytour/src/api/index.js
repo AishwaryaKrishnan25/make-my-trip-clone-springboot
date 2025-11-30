@@ -2,7 +2,7 @@
 import axios from "axios";
 
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE || "https://make-my-trip-clone-springboot-yal6.onrender.com";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 /* ----------------- Auth / User ----------------- */
 export const login = async (email, password) => {
