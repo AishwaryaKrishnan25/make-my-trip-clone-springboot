@@ -192,7 +192,7 @@ export default function LiveFlightStatus({
       esCtl.start();
     } catch (e) {
       // fallback to plain EventSource if helper is not available
-      const base = (process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080").replace(/\/$/, "");
+      const base = (process.env.NEXT_PUBLIC_API_BASE || "https://make-my-trip-clone-springboot-gb7g.onrender.com").replace(/\/$/, "");
       const url = `${base}/api/flight-status/stream/${encodeURIComponent(flightId)}`;
       try {
         const es = new EventSource(url);
