@@ -93,7 +93,7 @@ const BookFlightPage = () => {
 
       try {
         const res = await fetch(
-          `http://localhost:8080/pricing/flight/${id}/price`
+          `http://https://make-my-trip-clone-springboot-gb7g.onrender.com/pricing/flight/${id}/price`
         );
         const data = await res.json();
 
