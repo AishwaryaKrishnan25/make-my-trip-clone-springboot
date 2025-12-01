@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+  process.env.NEXT_PUBLIC_API_BASE || "https://make-my-trip-clone-springboot-gb7g.onrender.com";
 
 /**
  * AddBasePrice
